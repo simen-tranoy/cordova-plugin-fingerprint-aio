@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,6 +15,7 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
 
@@ -80,17 +82,17 @@ public class BiometricActivity extends AppCompatActivity {
     }
 
     private void authenticateToDecrypt() throws CryptoException {
-        String token = context.mPromptInfo.getToken();
+        String token = this.mPromptInfo.getToken();
         boolean useLegacyCipher = token != null;
         byte[] initializationVector = EncryptedData.loadInitializationVector(this, useLegacyCipher);
         
 
-        Cipher cipher
+        Cipher cipher;
         if (useLegacyCipher) {
             String clientId = "no.dfo.sapapp.dist.fot";
-            mCryptographyManager.getInitializedCipherForDecryptionLegacy(clientId, initializationVector, this);
+            cipher = mCryptographyManager.getInitializedCipherForDecryptionLegacy(clientId, initializationVector, this);
         } else {
-            mCryptographyManager.getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);
+            cipher = mCryptographyManager.getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);
         }
          
         mBiometricPrompt.authenticate(createPromptInfo(), new BiometricPrompt.CryptoObject(cipher));

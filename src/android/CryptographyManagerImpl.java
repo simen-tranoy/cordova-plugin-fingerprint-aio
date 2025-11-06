@@ -19,6 +19,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.security.auth.x500.X500Principal;
 
 class CryptographyManagerImpl implements CryptographyManager {
@@ -148,6 +149,7 @@ class CryptographyManagerImpl implements CryptographyManager {
             Cipher cipher = getLegacyCipher();
             SecretKey secretKey = getOrCreateSecretKey(keyName, true, context);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(initializationVector));
+            return cipher;
         } catch (Exception e) {
             handleException(e, keyName);
             throw new CryptoException(e.getMessage(), e);
