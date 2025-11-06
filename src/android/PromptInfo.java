@@ -15,6 +15,7 @@ class PromptInfo {
     private static final String CONFIRMATION_REQUIRED = "confirmationRequired";
     private static final String INVALIDATE_ON_ENROLLMENT = "invalidateOnEnrollment";
     private static final String SECRET = "secret";
+    private static final String TOKEN = "token";
     private static final String BIOMETRIC_ACTIVITY_TYPE = "biometricActivityType";
 
     static final String SECRET_EXTRA = "secret";
@@ -57,6 +58,10 @@ class PromptInfo {
         return bundle.getString(SECRET);
     }
 
+    String getToken() {
+        return bundle.getString(TOKEN);
+    }
+
     boolean invalidateOnEnrollment() {
         return bundle.getBoolean(INVALIDATE_ON_ENROLLMENT);
     }
@@ -77,6 +82,7 @@ class PromptInfo {
         private boolean confirmationRequired = true;
         private boolean invalidateOnEnrollment = false;
         private String secret = null;
+        private String token = null;
         private BiometricActivityType type = null;
 
         Builder(String applicationLabel) {
@@ -106,6 +112,7 @@ class PromptInfo {
             bundle.putString(FALLBACK_BUTTON_TITLE, this.fallbackButtonTitle);
             bundle.putString(CANCEL_BUTTON_TITLE, this.cancelButtonTitle);
             bundle.putString(SECRET, this.secret);
+            bundle.putString(TOKEN, this.token);
             bundle.putBoolean(DISABLE_BACKUP, this.disableBackup);
             bundle.putBoolean(CONFIRMATION_REQUIRED, this.confirmationRequired);
             bundle.putBoolean(INVALIDATE_ON_ENROLLMENT, this.invalidateOnEnrollment);
@@ -128,6 +135,7 @@ class PromptInfo {
             confirmationRequired = args.getBoolean(CONFIRMATION_REQUIRED, confirmationRequired);
             invalidateOnEnrollment = args.getBoolean(INVALIDATE_ON_ENROLLMENT, false);
             secret = args.getString(SECRET, null);
+            token  = args.getString(TOKEN, null);
         }
     }
 }

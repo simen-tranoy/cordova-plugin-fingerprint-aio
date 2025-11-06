@@ -9,6 +9,7 @@ class EncryptedData {
 
     private static final String CIPHERTEXT_KEY_NAME = "__biometric-aio-ciphertext";
     private static final String IV_KEY_NAME = "__biometric-aio-iv";
+    private static final String FINGERPRINT_PREF_IV = "aes_iv";
 
     private byte[] ciphertext;
     private byte[] initializationVector;
@@ -18,7 +19,10 @@ class EncryptedData {
         this.initializationVector = initializationVector;
     }
 
-    static byte[] loadInitializationVector(Context context) throws CryptoException {
+    static byte[] loadInitializationVector(Context context, boolean useLegacyCipher) throws CryptoException {
+        if (useLegacyCipher) {
+            return loadLegacy(FINGERPRINT_PREF_IV, context);
+        }
         return load(IV_KEY_NAME, context);
     }
 
@@ -43,5 +47,14 @@ class EncryptedData {
         String res = preferences.getString(key, null);
         if (res == null) throw new CryptoException(PluginError.BIOMETRIC_NO_SECRET_FOUND);
         return Base64.decode(res, Base64.DEFAULT);
+    }
+
+    private static byte[] loadLegacy(String key, Context context) throws CryptoException {
+        String mClientId = "no.dfo.sapapp.dist.fot";
+        String mUsername = "9990GERLI";
+        SharedPreferences sharedPreferences = context.getSharedPreferences(mClientId + mUsername, Context.MODE_PRIVATE);
+        String res = sharedPreferences.getString(key, null);
+        if (res == null) throw new CryptoException(PluginError.BIOMETRIC_NO_SECRET_FOUND);
+        return Base64.decode(res, Base64.NO_WRAP);
     }
 }

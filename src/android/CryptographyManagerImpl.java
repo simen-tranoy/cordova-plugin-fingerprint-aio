@@ -35,6 +35,11 @@ class CryptographyManagerImpl implements CryptographyManager {
         return Cipher.getInstance(transformation);
     }
 
+    private Cipher getLegacyCipher() throws NoSuchPaddingException, NoSuchAlgorithmException {
+        String transformation = KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" + KeyProperties.ENCRYPTION_PADDING_PKCS7;
+        return Cipher.getInstance(transformation);
+    }
+
     private SecretKey getOrCreateSecretKey(String keyName, boolean invalidateOnEnrollment, Context context) throws CryptoException {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return getOrCreateSecretKeyNew(keyName, invalidateOnEnrollment);
@@ -132,6 +137,17 @@ class CryptographyManagerImpl implements CryptographyManager {
             SecretKey secretKey = getOrCreateSecretKey(keyName, true, context);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(128, initializationVector));
             return cipher;
+        } catch (Exception e) {
+            handleException(e, keyName);
+            throw new CryptoException(e.getMessage(), e);
+        }
+    }
+
+    public Cipher getInitializedCipherForDecryptionLegacy(String keyName, byte[] initializationVector, Context context) throws CryptoException {
+        try {
+            Cipher cipher = getLegacyCipher();
+            SecretKey secretKey = getOrCreateSecretKey(keyName, true, context);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(initializationVector));
         } catch (Exception e) {
             handleException(e, keyName);
             throw new CryptoException(e.getMessage(), e);

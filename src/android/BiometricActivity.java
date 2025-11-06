@@ -80,9 +80,19 @@ public class BiometricActivity extends AppCompatActivity {
     }
 
     private void authenticateToDecrypt() throws CryptoException {
-        byte[] initializationVector = EncryptedData.loadInitializationVector(this);
-        Cipher cipher = mCryptographyManager
-                .getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);
+        String token = context.mPromptInfo.getToken();
+        boolean useLegacyCipher = token != null;
+        byte[] initializationVector = EncryptedData.loadInitializationVector(this, useLegacyCipher);
+        
+
+        Cipher cipher
+        if (useLegacyCipher) {
+            String clientId = "no.dfo.sapapp.dist.fot";
+            mCryptographyManager.getInitializedCipherForDecryptionLegacy(clientId, initializationVector, this);
+        } else {
+            mCryptographyManager.getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);
+        }
+         
         mBiometricPrompt.authenticate(createPromptInfo(), new BiometricPrompt.CryptoObject(cipher));
     }
 
@@ -216,10 +226,39 @@ public class BiometricActivity extends AppCompatActivity {
         encryptedData.save(this);
     }
 
+    private static final String CREDENTIAL_DELIMITER = "|:|";
+    private String getPassword(String secret) {
+        Pattern pattern = Pattern.compile(Pattern.quote(CREDENTIAL_DELIMITER));
+        String[] credentialArray = pattern.split(secret);
+        if (credentialArray.length == 2) {
+            return credentialArray[1];
+        } else {
+            credentialArray = secret.split(":");
+            if (credentialArray.length == 2) {
+                return credentialArray[1];
+            }
+        }
+        return null;
+    }
+
     private Intent getDecryptedIntent(BiometricPrompt.CryptoObject cryptoObject) throws CryptoException {
-        byte[] ciphertext = EncryptedData.loadCiphertext(this);
+        String token = this.mPromptInfo.getToken();
+        byte[] ciphertext;
+        if (token != null) {
+            ciphertext = Base64.decode(token, Base64.NO_WRAP);
+        } else {
+            ciphertext = EncryptedData.loadCiphertext(this);
+        }
+
         String secret = mCryptographyManager.decryptData(ciphertext, cryptoObject.getCipher());
         if (secret != null) {
+            if (token != null) {
+                secret = getPassword(secret);
+                if (secret == null) {
+                    return null;
+                }
+            }
+
             Intent intent = new Intent();
             intent.putExtra(PromptInfo.SECRET_EXTRA, secret);
             return intent;
