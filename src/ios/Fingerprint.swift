@@ -163,7 +163,6 @@ enum PluginError:Int {
         if let description = data?.object(forKey: "description") as! String? {
             prompt = description;
         }
-
         var pluginResult: CDVPluginResult
         do {
             let result = try Secret().load(prompt)

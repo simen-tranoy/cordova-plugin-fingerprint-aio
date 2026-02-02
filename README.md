@@ -199,8 +199,8 @@ Fingerprint.loadBiometricSecret({
 ### Show authentication dialogue and migrate secret
 ```javascript
 Fingerprint.migrateSecret({
-        clientId: "client-id",
-        username: "user", 
+        service: "service-id",
+        account: "user", 
         token: "base64-encoded-legacy-token",
         invalidateOnEnrollment: true,  // optional
         title: "Migrate Biometric",    // optional
