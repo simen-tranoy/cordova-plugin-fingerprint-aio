@@ -199,8 +199,8 @@ enum PluginError:Int {
         self.loadSecret(command)
     }
 
-    @objc(migrateSecret:)
-    func migrateSecret(_ command: CDVInvokedUrlCommand){
+    @objc(loadLegacySecret:)
+    func loadLegacySecret(_ command: CDVInvokedUrlCommand){
         let data = command.arguments[0] as? [String: Any]
 
         guard let service = data?["service"] as? String,
@@ -214,11 +214,7 @@ enum PluginError:Int {
         let prompt = data?["description"] as? String ?? "Authentication"
         var pluginResult: CDVPluginResult
         do {
-            let secret = Secret()
-            try? secret.delete()
-            let invalidateOnEnrollment = data?["invalidateOnEnrollment"] as? Bool ?? false
-            let result = try secret.loadLegacy(prompt, service: service, account: account, invalidateOnEnrollment: invalidateOnEnrollment)
-            try self.save(result, invalidateOnEnrollment: invalidateOnEnrollment)
+            let result = try Secret().loadLegacy(prompt, service: service, account: account)
             pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: result)
         } catch {
             var code = PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue

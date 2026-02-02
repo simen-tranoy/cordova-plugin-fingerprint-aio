@@ -64,8 +64,8 @@ public class BiometricActivity extends AppCompatActivity {
           case LOAD_SECRET:
             authenticateToDecrypt();
             return;
-          case MIGRATE_SECRET:
-            authenticateToMigrate();
+          case LOAD_LEGACY_SECRET:
+            authenticateToDecryptLegacy();
             return;
         }
         throw new CryptoException(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
@@ -91,7 +91,7 @@ public class BiometricActivity extends AppCompatActivity {
         mBiometricPrompt.authenticate(createPromptInfo(), new BiometricPrompt.CryptoObject(cipher));
     }
 
-    private void authenticateToMigrate() throws CryptoException {
+    private void authenticateToDecryptLegacy() throws CryptoException {
         String token = this.mPromptInfo.getToken();
         String service = this.mPromptInfo.getService();
         String account = this.mPromptInfo.getAccount();
@@ -221,8 +221,8 @@ public class BiometricActivity extends AppCompatActivity {
           case LOAD_SECRET:
             intent = getDecryptedIntent(cryptoObject);
             break;
-          case MIGRATE_SECRET:
-            intent = migrateSecret(cryptoObject);
+          case LOAD_LEGACY_SECRET:
+            intent = loadLegacySecret(cryptoObject);
             break;
         }
         if (intent == null) {
@@ -239,8 +239,7 @@ public class BiometricActivity extends AppCompatActivity {
         encryptedData.save(this);
     }
 
-    private Intent migrateSecret(BiometricPrompt.CryptoObject cryptoObject) throws CryptoException {
-        // Step 1: Decrypt the legacy token
+    private Intent loadLegacySecret(BiometricPrompt.CryptoObject cryptoObject) throws CryptoException {
         String token = this.mPromptInfo.getToken();
         byte[] ciphertext = Base64.decode(token, Base64.NO_WRAP);
 
@@ -249,22 +248,11 @@ public class BiometricActivity extends AppCompatActivity {
             throw new CryptoException(PluginError.BIOMETRIC_NO_SECRET_FOUND);
         }
 
-        // Step 2: Extract password from legacy format ("clientId|:|password" or "clientId:password")
         String password = getPassword(decryptedSecret);
         if (password == null) {
             throw new CryptoException(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
         }
 
-        // Step 3: Initialize new cipher for encryption
-        boolean invalidateOnEnrollment = mPromptInfo.invalidateOnEnrollment();
-        Cipher encryptCipher = mCryptographyManager.getInitializedCipherForEncryption(
-            SECRET_KEY, invalidateOnEnrollment, this);
-
-        // Step 4: Encrypt with new cipher and save
-        EncryptedData encryptedData = mCryptographyManager.encryptData(password, encryptCipher);
-        encryptedData.save(this);
-
-        // Step 5: Return the migrated password
         Intent intent = new Intent();
         intent.putExtra(PromptInfo.SECRET_EXTRA, password);
         return intent;

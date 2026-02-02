@@ -57,8 +57,8 @@ public class Fingerprint extends CordovaPlugin {
             executeIsAvailable(args);
             return true;
 
-        } else if ("migrateSecret".equals(action)) {
-            executeMigrateSecret(args);
+        } else if ("loadLegacySecret".equals(action)) {
+            executeLoadLegacySecret(args);
             return true;
 
         }
@@ -93,7 +93,7 @@ public class Fingerprint extends CordovaPlugin {
         this.runBiometricActivity(args, BiometricActivityType.JUST_AUTHENTICATE);
     }
 
-    private void executeMigrateSecret(JSONArray args) {
+    private void executeLoadLegacySecret(JSONArray args) {
         if (args == null) {
             sendError(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
             return;
@@ -109,13 +109,13 @@ public class Fingerprint extends CordovaPlugin {
             return;
         }
 
-        this.runBiometricActivity(args, BiometricActivityType.MIGRATE_SECRET);
+        this.runBiometricActivity(args, BiometricActivityType.LOAD_LEGACY_SECRET);
     }
 
     private boolean determineStrongBiometricsRequired(BiometricActivityType type) {
         return type == BiometricActivityType.REGISTER_SECRET
             || type == BiometricActivityType.LOAD_SECRET
-            || type == BiometricActivityType.MIGRATE_SECRET;
+            || type == BiometricActivityType.LOAD_LEGACY_SECRET;
     }
 
     private void runBiometricActivity(JSONArray args, BiometricActivityType type) {

@@ -4,7 +4,7 @@ public enum BiometricActivityType {
     JUST_AUTHENTICATE(1),
     REGISTER_SECRET(2),
     LOAD_SECRET(3),
-    MIGRATE_SECRET(4);
+    LOAD_LEGACY_SECRET(4);
 
     private int value;
 
