@@ -84,12 +84,14 @@ public class BiometricActivity extends AppCompatActivity {
     private void authenticateToDecrypt() throws CryptoException {
         String token = this.mPromptInfo.getToken();
         boolean useLegacyCipher = token != null;
-        byte[] initializationVector = EncryptedData.loadInitializationVector(this, useLegacyCipher);
+
+        String clientId = this.mPromptInfo.getClientId();
+        String username = this.mPromptInfo.getUsername();
+        byte[] initializationVector = EncryptedData.loadInitializationVector(this, useLegacyCipher, clientId, username);
         
 
         Cipher cipher;
         if (useLegacyCipher) {
-            String clientId = "no.dfo.sapapp.dist.fot";
             cipher = mCryptographyManager.getInitializedCipherForDecryptionLegacy(clientId, initializationVector, this);
         } else {
             cipher = mCryptographyManager.getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);

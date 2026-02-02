@@ -15,6 +15,8 @@ class PromptInfo {
     private static final String CONFIRMATION_REQUIRED = "confirmationRequired";
     private static final String INVALIDATE_ON_ENROLLMENT = "invalidateOnEnrollment";
     private static final String SECRET = "secret";
+    private static final String CLIENT_ID = "clientId";
+    private static final String USERNAME = "username";
     private static final String TOKEN = "token";
     private static final String BIOMETRIC_ACTIVITY_TYPE = "biometricActivityType";
 
@@ -58,6 +60,14 @@ class PromptInfo {
         return bundle.getString(SECRET);
     }
 
+    String getClientId() {
+        return bundle.getString(CLIENT_ID);
+    }
+
+    String getUsername() {
+        return bundle.getString(USERNAME);
+    }
+
     String getToken() {
         return bundle.getString(TOKEN);
     }
@@ -82,6 +92,8 @@ class PromptInfo {
         private boolean confirmationRequired = true;
         private boolean invalidateOnEnrollment = false;
         private String secret = null;
+        private String clientId = null;
+        private String username = null;
         private String token = null;
         private BiometricActivityType type = null;
 
@@ -112,6 +124,8 @@ class PromptInfo {
             bundle.putString(FALLBACK_BUTTON_TITLE, this.fallbackButtonTitle);
             bundle.putString(CANCEL_BUTTON_TITLE, this.cancelButtonTitle);
             bundle.putString(SECRET, this.secret);
+            bundle.putString(CLIENT_ID, this.clientId);
+            bundle.putString(USERNAME, this.username);
             bundle.putString(TOKEN, this.token);
             bundle.putBoolean(DISABLE_BACKUP, this.disableBackup);
             bundle.putBoolean(CONFIRMATION_REQUIRED, this.confirmationRequired);
@@ -135,6 +149,8 @@ class PromptInfo {
             confirmationRequired = args.getBoolean(CONFIRMATION_REQUIRED, confirmationRequired);
             invalidateOnEnrollment = args.getBoolean(INVALIDATE_ON_ENROLLMENT, false);
             secret = args.getString(SECRET, null);
+            clientId = args.getString(CLIENT_ID, null);
+            username = args.getString(USERNAME, null);
             token  = args.getString(TOKEN, null);
         }
     }

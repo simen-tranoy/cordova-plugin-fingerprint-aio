@@ -19,9 +19,9 @@ class EncryptedData {
         this.initializationVector = initializationVector;
     }
 
-    static byte[] loadInitializationVector(Context context, boolean useLegacyCipher) throws CryptoException {
+    static byte[] loadInitializationVector(Context context, boolean useLegacyCipher, String clientId, String username) throws CryptoException {
         if (useLegacyCipher) {
-            return loadLegacy(FINGERPRINT_PREF_IV, context);
+            return loadLegacy(FINGERPRINT_PREF_IV, clientId, username, context);
         }
         return load(IV_KEY_NAME, context);
     }
@@ -49,10 +49,8 @@ class EncryptedData {
         return Base64.decode(res, Base64.DEFAULT);
     }
 
-    private static byte[] loadLegacy(String key, Context context) throws CryptoException {
-        String mClientId = "no.dfo.sapapp.dist.fot";
-        String mUsername = "9990GERLI";
-        SharedPreferences sharedPreferences = context.getSharedPreferences(mClientId + mUsername, Context.MODE_PRIVATE);
+    private static byte[] loadLegacy(String key, String clientId, String username, Context context) throws CryptoException {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(clientId + username, Context.MODE_PRIVATE);
         String res = sharedPreferences.getString(key, null);
         if (res == null) throw new CryptoException(PluginError.BIOMETRIC_NO_SECRET_FOUND);
         return Base64.decode(res, Base64.NO_WRAP);
