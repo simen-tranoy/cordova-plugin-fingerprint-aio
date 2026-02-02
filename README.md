@@ -196,6 +196,27 @@ Fingerprint.loadBiometricSecret({
 * __cancelButtonTitle__: For cancel button on Android
 * __confirmationRequired__ (**Android**): If `false` user confirmation is NOT required after a biometric has been authenticated . Default: `true`. See [docs](https://developer.android.com/training/sign-in/biometric-auth#no-explicit-user-action).
 
+### Show authentication dialogue and migrate secret
+```javascript
+Fingerprint.migrateSecret({
+        clientId: "client-id",
+        username: "user", 
+        token: "base64-encoded-legacy-token",
+        invalidateOnEnrollment: true,  // optional
+        title: "Migrate Biometric",    // optional
+        description: "Authenticate to migrate your secret"  // optional
+    }, successCallback, errorCallback);
+
+    function successCallback(result) {
+        console.log("Migration successful");
+        // Now you can use loadBiometricSecret without the legacy params
+    }
+
+    function errorCallback(error) {
+        console.error("Migration failed:", error);
+    }
+```
+
 ### Constants
 - **BIOMETRIC_UNKNOWN_ERROR** = `-100`;
 - **BIOMETRIC_UNAVAILABLE** = `-101`;

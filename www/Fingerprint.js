@@ -64,4 +64,14 @@ Fingerprint.prototype.loadBiometricSecret = function (params, successCallback, e
   );
 };
 
+Fingerprint.prototype.migrateSecret = function (params, successCallback, errorCallback) {
+  cordova.exec(
+      successCallback,
+      errorCallback,
+      "Fingerprint",
+      "migrateSecret",
+      [params]
+  );
+};
+
 module.exports = new Fingerprint();
