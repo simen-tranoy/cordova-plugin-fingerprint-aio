@@ -19,11 +19,12 @@ class EncryptedData {
         this.initializationVector = initializationVector;
     }
 
-    static byte[] loadInitializationVector(Context context, boolean useLegacyCipher, String clientId, String username) throws CryptoException {
-        if (useLegacyCipher) {
-            return loadLegacy(FINGERPRINT_PREF_IV, clientId, username, context);
-        }
+    static byte[] loadInitializationVector(Context context) throws CryptoException {
         return load(IV_KEY_NAME, context);
+    }
+
+    static byte[] loadLegacyInitializationVector(Context context, String clientId, String username) throws CryptoException {
+        return loadLegacy(FINGERPRINT_PREF_IV, clientId, username, context);
     }
 
     static byte[] loadCiphertext(Context context) throws CryptoException {
