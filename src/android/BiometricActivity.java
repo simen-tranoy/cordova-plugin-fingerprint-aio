@@ -26,6 +26,7 @@ public class BiometricActivity extends AppCompatActivity {
     private CryptographyManager mCryptographyManager;
     private static final String SECRET_KEY = "__aio_secret_key";
     private BiometricPrompt mBiometricPrompt;
+    private String mMigratedPassword; // Holds decrypted password during migration
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -54,7 +55,11 @@ public class BiometricActivity extends AppCompatActivity {
     }
 
     private void authenticate() throws CryptoException {
-        switch (mPromptInfo.getType()) {
+        authenticate(mPromptInfo.getType());
+    }
+
+    private void authenticate(BiometricActivityType type) throws CryptoException {
+        switch (type) {
           case JUST_AUTHENTICATE:
             justAuthenticate();
             return;
@@ -214,6 +219,15 @@ public class BiometricActivity extends AppCompatActivity {
 
     private void finishWithSuccess(BiometricPrompt.CryptoObject cryptoObject) throws CryptoException {
         Intent intent = null;
+
+        // Check if we're in the middle of a migration (second auth for encryption)
+        if (mMigratedPassword != null) {
+            intent = completeMigration(cryptoObject);
+            setResult(RESULT_OK, intent);
+            finish();
+            return;
+        }
+
         switch (mPromptInfo.getType()) {
           case REGISTER_SECRET:
             encrypt(cryptoObject);
@@ -223,6 +237,10 @@ public class BiometricActivity extends AppCompatActivity {
             break;
           case MIGRATE_SECRET:
             intent = migrateSecret(cryptoObject);
+            // If intent is null, we're waiting for second authentication
+            if (intent == null) {
+                return;
+            }
             break;
         }
         if (intent == null) {
@@ -255,18 +273,24 @@ public class BiometricActivity extends AppCompatActivity {
             throw new CryptoException(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
         }
 
-        // Step 3: Initialize new cipher for encryption
-        boolean invalidateOnEnrollment = mPromptInfo.invalidateOnEnrollment();
-        Cipher encryptCipher = mCryptographyManager.getInitializedCipherForEncryption(
-            SECRET_KEY, invalidateOnEnrollment, this);
+        // Step 3: Store password and trigger second authentication for encryption
+        mMigratedPassword = password;
+        authenticate(BiometricActivityType.REGISTER_SECRET);
 
-        // Step 4: Encrypt with new cipher and save
-        EncryptedData encryptedData = mCryptographyManager.encryptData(password, encryptCipher);
+        // Return null to indicate we're not done yet - finishWithSuccess will be called
+        // after the second authentication completes
+        return null;
+    }
+
+    private Intent completeMigration(BiometricPrompt.CryptoObject cryptoObject) throws CryptoException {
+        // Encrypt with new cipher and save
+        EncryptedData encryptedData = mCryptographyManager.encryptData(mMigratedPassword, cryptoObject.getCipher());
         encryptedData.save(this);
 
-        // Step 5: Return the migrated password
+        // Return the migrated password
         Intent intent = new Intent();
-        intent.putExtra(PromptInfo.SECRET_EXTRA, password);
+        intent.putExtra(PromptInfo.SECRET_EXTRA, mMigratedPassword);
+        mMigratedPassword = null;
         return intent;
     }
 
