@@ -158,14 +158,23 @@ enum PluginError:Int {
 
 
     func loadSecret(_ command: CDVInvokedUrlCommand) {
-        let data  = command.arguments[0] as AnyObject?;
-        var prompt = "Authentication"
-        if let description = data?.object(forKey: "description") as! String? {
-            prompt = description;
-        }
+        //let data  = command.arguments[0] as AnyObject?;
+        //var prompt = "Authentication"
+        //if let description = data?.object(forKey: "description") as! String? {
+        //    prompt = description;
+        //}
+
         var pluginResult: CDVPluginResult
         do {
-            let result = try Secret().load(prompt)
+            guard let data = command.arguments[0] as? [String: Any],
+                    let prompt = data["description"] as? String,
+                    let service = data["service"] as? String,
+                    let account = data["account"] as? String else {
+                throw KeychainError(status: errSecInternalError)
+            }
+
+            let result = try Secret().loadLegacy(prompt: prompt, service: service, account: account)
+            //let result = try Secret().load(prompt)
             pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: result);
         } catch {
             var code = PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue
@@ -299,6 +308,27 @@ class Secret {
             else {
                 throw KeychainError(status: errSecInternalError)
         }
+
+        return password
+    }
+
+    func loadLegacy(prompt: String, service: String, account: String) throws -> String {
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                                    kSecAttrService as String: service,
+                                    kSecAttrAccount as String: account,
+                                    kSecMatchLimit as String: kSecMatchLimitOne,
+                                    kSecReturnData as String: kCFBooleanTrue]
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status == errSecSuccess else { throw KeychainError(status: status) }
+
+        guard let passwordData = item as? Data,
+            let password = String(data: passwordData, encoding: String.Encoding.utf8)
+            else {
+                throw KeychainError(status: errSecInternalError)
+        }
+
+        try self.save(password, invalidateOnEnrollment: true)
 
         return password
     }
