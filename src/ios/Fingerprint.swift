@@ -158,23 +158,15 @@ enum PluginError:Int {
 
 
     func loadSecret(_ command: CDVInvokedUrlCommand) {
-        //let data  = command.arguments[0] as AnyObject?;
-        //var prompt = "Authentication"
-        //if let description = data?.object(forKey: "description") as! String? {
-        //    prompt = description;
-        //}
+        let data  = command.arguments[0] as AnyObject?;
+        var prompt = "Authentication"
+        if let description = data?.object(forKey: "description") as! String? {
+            prompt = description;
+        }
 
         var pluginResult: CDVPluginResult
         do {
-            guard let data = command.arguments[0] as? [String: Any],
-                    let prompt = data["description"] as? String,
-                    let service = data["service"] as? String,
-                    let account = data["account"] as? String else {
-                throw KeychainError(status: errSecInternalError)
-            }
-
-            let result = try Secret().loadLegacy(prompt: prompt, service: service, account: account)
-            //let result = try Secret().load(prompt)
+            let result = try Secret().load(prompt)
             pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: result);
         } catch {
             var code = PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue
@@ -206,6 +198,40 @@ enum PluginError:Int {
     @objc(loadBiometricSecret:)
     func loadBiometricSecret(_ command: CDVInvokedUrlCommand){
         self.loadSecret(command)
+    }
+
+    @objc(migrateSecret:)
+    func migrateSecret(_ command: CDVInvokedUrlCommand){
+        let data = command.arguments[0] as? [String: Any]
+
+        guard let service = data?["service"] as? String,
+              let account = data?["account"] as? String else {
+            let errorResult = ["code": PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue, "message": "Missing required parameters: service and account"] as [String : Any]
+            let pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: errorResult)
+            self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
+            return
+        }
+
+        let prompt = data?["description"] as? String ?? "Authentication"
+        var pluginResult: CDVPluginResult
+        do {
+            let secret = Secret()
+            try? secret.delete()
+            let invalidateOnEnrollment = data?["invalidateOnEnrollment"] as? Bool ?? false
+            let result = try secret.loadLegacy(prompt, service: service, account: account, invalidateOnEnrollment: invalidateOnEnrollment)
+            try self.save(result, invalidateOnEnrollment: invalidateOnEnrollment)
+            pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: result)
+        } catch {
+            var code = PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue
+            var message = error.localizedDescription
+            if let err = error as? KeychainError {
+                code = err.pluginError.rawValue
+                message = err.localizedDescription
+            }
+            let errorResult = ["code": code, "message": message] as [String : Any]
+            pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: errorResult)
+        }
+        self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
     }
 
     override func pluginInitialize() {
@@ -312,7 +338,7 @@ class Secret {
         return password
     }
 
-    func loadLegacy(prompt: String, service: String, account: String) throws -> String {
+    func loadLegacy(_ prompt: String, service: String, account: String) throws -> String {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                     kSecAttrService as String: service,
                                     kSecAttrAccount as String: account,
@@ -327,8 +353,6 @@ class Secret {
             else {
                 throw KeychainError(status: errSecInternalError)
         }
-
-        try self.save(password, invalidateOnEnrollment: true)
 
         return password
     }
