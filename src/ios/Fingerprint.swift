@@ -203,9 +203,9 @@ enum PluginError:Int {
     func migrateSecret(_ command: CDVInvokedUrlCommand){
         let data = command.arguments[0] as? [String: Any]
 
-        guard let service = data?["service"] as? String,
-              let account = data?["account"] as? String else {
-            let errorResult = ["code": PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue, "message": "Missing required parameters: service and account"] as [String : Any]
+        guard let clientId = data?["clientId"] as? String,
+              let username = data?["username"] as? String else {
+            let errorResult = ["code": PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue, "message": "Missing required parameters: clientId and username"] as [String : Any]
             let pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: errorResult)
             self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
             return
@@ -217,7 +217,7 @@ enum PluginError:Int {
             let secret = Secret()
             try? secret.delete()
             let invalidateOnEnrollment = data?["invalidateOnEnrollment"] as? Bool ?? false
-            let result = try secret.loadLegacy(prompt, service: service, account: account, invalidateOnEnrollment: invalidateOnEnrollment)
+            let result = try secret.loadLegacy(prompt, clientId: clientId, username: username)
             try self.save(result, invalidateOnEnrollment: invalidateOnEnrollment)
             pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: result)
         } catch {
@@ -337,10 +337,10 @@ class Secret {
         return password
     }
 
-    func loadLegacy(_ prompt: String, service: String, account: String) throws -> String {
+    func loadLegacy(_ prompt: String, clientId: String, username: String) throws -> String {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-                                    kSecAttrService as String: service,
-                                    kSecAttrAccount as String: account,
+                                    kSecAttrService as String: clientId,
+                                    kSecAttrAccount as String: username,
                                     kSecMatchLimit as String: kSecMatchLimitOne,
                                     kSecReturnData as String: kCFBooleanTrue]
         var item: CFTypeRef?

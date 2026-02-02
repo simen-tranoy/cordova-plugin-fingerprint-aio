@@ -100,11 +100,11 @@ public class Fingerprint extends CordovaPlugin {
         }
 
         Args argsHelper = new Args(args);
-        String service = argsHelper.getString("service", null);
-        String account = argsHelper.getString("account", null);
+        String clientId = argsHelper.getString("clientId", null);
+        String username = argsHelper.getString("username", null);
         String token = argsHelper.getString("token", null);
 
-        if (service == null || account == null || token == null) {
+        if (clientId == null || username == null || token == null) {
             sendError(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
             return;
         }

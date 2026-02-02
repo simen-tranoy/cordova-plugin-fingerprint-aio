@@ -23,8 +23,8 @@ class EncryptedData {
         return load(IV_KEY_NAME, context);
     }
 
-    static byte[] loadLegacyInitializationVector(Context context, String service, String account) throws CryptoException {
-        return loadLegacy(FINGERPRINT_PREF_IV, service, account, context);
+    static byte[] loadLegacyInitializationVector(Context context, String clientId, String username) throws CryptoException {
+        return loadLegacy(FINGERPRINT_PREF_IV, clientId, username, context);
     }
 
     static byte[] loadCiphertext(Context context) throws CryptoException {
@@ -50,8 +50,8 @@ class EncryptedData {
         return Base64.decode(res, Base64.DEFAULT);
     }
 
-    private static byte[] loadLegacy(String key, String service, String account, Context context) throws CryptoException {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(service + account, Context.MODE_PRIVATE);
+    private static byte[] loadLegacy(String key, String clientId, String username, Context context) throws CryptoException {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(clientId + username, Context.MODE_PRIVATE);
         String res = sharedPreferences.getString(key, null);
         if (res == null) throw new CryptoException(PluginError.BIOMETRIC_NO_SECRET_FOUND);
         return Base64.decode(res, Base64.NO_WRAP);
