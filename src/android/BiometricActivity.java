@@ -87,21 +87,21 @@ public class BiometricActivity extends AppCompatActivity {
     private void authenticateToDecrypt() throws CryptoException {
         byte[] initializationVector = EncryptedData.loadInitializationVector(this);
         Cipher cipher = mCryptographyManager
-            .getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);
+                .getInitializedCipherForDecryption(SECRET_KEY, initializationVector, this);
         mBiometricPrompt.authenticate(createPromptInfo(), new BiometricPrompt.CryptoObject(cipher));
     }
 
     private void authenticateToMigrate() throws CryptoException {
         String token = this.mPromptInfo.getToken();
-        String clientId = this.mPromptInfo.getClientId();
-        String username = this.mPromptInfo.getUsername();
+        String service = this.mPromptInfo.getService();
+        String account = this.mPromptInfo.getAccount();
 
-        if (token == null || clientId == null || username == null) {
+        if (token == null || service == null || account == null) {
             throw new CryptoException(PluginError.BIOMETRIC_ARGS_PARSING_FAILED);
         }
 
-        byte[] initializationVector = EncryptedData.loadLegacyInitializationVector(this, clientId, username);
-        Cipher cipher = mCryptographyManager.getInitializedCipherForDecryptionLegacy(clientId, initializationVector, this);
+        byte[] initializationVector = EncryptedData.loadLegacyInitializationVector(this, service, account);
+        Cipher cipher = mCryptographyManager.getInitializedCipherForDecryptionLegacy(service, initializationVector, this);
 
         mBiometricPrompt.authenticate(createPromptInfo(), new BiometricPrompt.CryptoObject(cipher));
     }
