@@ -212,21 +212,24 @@ enum PluginError:Int {
         }
 
         let prompt = data?["description"] as? String ?? "Authentication"
-        var pluginResult: CDVPluginResult
-        do {
-            let result = try Secret().loadLegacy(prompt, service: service, account: account)
-            pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: result)
-        } catch {
-            var code = PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue
-            var message = error.localizedDescription
-            if let err = error as? KeychainError {
-                code = err.pluginError.rawValue
-                message = err.localizedDescription
+
+        Secret().loadLegacy(prompt, service: service, account: account) { [weak self] result in
+            var pluginResult: CDVPluginResult
+            switch result {
+            case .success(let secret):
+                pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: secret)
+            case .failure(let error):
+                var code = PluginError.BIOMETRIC_UNKNOWN_ERROR.rawValue
+                var message = error.localizedDescription
+                if let err = error as? KeychainError {
+                    code = err.pluginError.rawValue
+                    message = err.localizedDescription
+                }
+                let errorResult = ["code": code, "message": message] as [String : Any]
+                pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: errorResult)
             }
-            let errorResult = ["code": code, "message": message] as [String : Any]
-            pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: errorResult)
+            self?.commandDelegate.send(pluginResult, callbackId: command.callbackId)
         }
-        self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
     }
 
     override func pluginInitialize() {
@@ -333,23 +336,49 @@ class Secret {
         return password
     }
 
-    func loadLegacy(_ prompt: String, service: String, account: String) throws -> String {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-                                    kSecAttrService as String: service,
-                                    kSecAttrAccount as String: account,
-                                    kSecMatchLimit as String: kSecMatchLimitOne,
-                                    kSecReturnData as String: kCFBooleanTrue]
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess else { throw KeychainError(status: status) }
+    func loadLegacy(_ prompt: String, service: String, account: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let context = LAContext()
+        var error: NSError?
 
-        guard let passwordData = item as? Data,
-            let password = String(data: passwordData, encoding: String.Encoding.utf8)
-            else {
-                throw KeychainError(status: errSecInternalError)
+        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: prompt) { success, authError in
+            if success {
+                let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                                            kSecAttrService as String: service,
+                                            kSecAttrAccount as String: account,
+                                            kSecMatchLimit as String: kSecMatchLimitOne,
+                                            kSecReturnData as String: kCFBooleanTrue]
+                var item: CFTypeRef?
+                let status = SecItemCopyMatching(query as CFDictionary, &item)
+                guard status == errSecSuccess else {
+                    completion(.failure(KeychainError(status: status)))
+                    return
+                }
+
+                guard let passwordData = item as? Data,
+                    let password = String(data: passwordData, encoding: String.Encoding.utf8)
+                    else {
+                        completion(.failure(KeychainError(status: errSecInternalError)))
+                        return
+                }
+
+                completion(.success(password))
+            } else {
+                if let error = authError as NSError? {
+                    let status: OSStatus
+                    switch error.code {
+                    case LAError.userCancel.rawValue:
+                        status = errSecUserCanceled
+                    case LAError.authenticationFailed.rawValue:
+                        status = errSecAuthFailed
+                    default:
+                        status = errSecAuthFailed
+                    }
+                    completion(.failure(KeychainError(status: status)))
+                } else {
+                    completion(.failure(KeychainError(status: errSecAuthFailed)))
+                }
+            }
         }
-
-        return password
     }
 
     func delete() throws {
